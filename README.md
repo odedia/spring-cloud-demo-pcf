@@ -1,4 +1,4 @@
-# spring-cloud-demo-pcf
+# Spring Cloud Demo on PCF - Walkthrough
 
 Spring Cloud Meetup
 -------------------
@@ -68,3 +68,45 @@ class BeerGreeting {
 	}
 }
 ```
+
+Add to application.properties:
+
+`greeting=Greetings from your TODO app!`
+
+
+Test with `mvn spring-boot:run`
+
+What's wrong with this implementation?
+- Internal configuration
+- Impossible to dynamically change config
+- Every property change requires a rebuild
+
+A Config Server can help here.
+
+Create at `start.spring.io`
+
+Add to main class:
+`@EnableConfigServer`
+
+Add to `application.properties`:
+```
+spring.application.name=config-server
+spring.cloud.config.server.git.uri=https://github.com/odedia/spring-cloud-meetup-config-repo.git
+server.port=8888
+```
+In todo-service, rename `application.properties` to `bootstrap.properties` and add the following:
+
+```
+spring.application.name=todo-service
+spring.cloud.config.uri=http://localhost:8888
+```
+
+This all works for local work, but what about PCF?
+Just create a service and provide the properties from above:
+
+```
+cf create-service p-config-server standard config-server -c '{"count": 2, "git": { "uri": "https://github.com/odedia/spring-cloud-meetup-config-repo.git" } }'
+```
+
+```mvn clean package && cf push -p target/app.jar todo-service```
+
